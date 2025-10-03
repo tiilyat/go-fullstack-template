@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import {Button} from "@/components/ui/button";
 
 const backendStatus = ref('')
 
-onMounted(async () => {
-  const response = await fetch('/api/ping')
-  const data = await response.json()
-  backendStatus.value = data.message
-})
+function checkBackendStatus() {
+  fetch('/api/health')
+    .then(response => response.json())
+    .then(data => {
+      backendStatus.value = data.message === 'ok' ? 'Healthy' : 'Unhealthy'
+    })
+    .catch(() => {
+      backendStatus.value = 'Error'
+    })
+}
 </script>
 
 <template>
-  <h1>You did it</h1>
-  <p>Backend status: {{ backendStatus }}</p>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <Button variant="default" @click="checkBackendStatus">Check backend status</Button>
+  <p v-if="Boolean(backendStatus)">Backend status: {{ backendStatus }}</p>
 </template>
