@@ -2,8 +2,8 @@ package http
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,7 +24,7 @@ type ServeConfig struct {
 func Serve(config ServeConfig) error {
 	router := NewServer(config)
 
-	server := &http.Server{
+	srv := &http.Server{
 		WriteTimeout:      config.WriteTimeout,
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadHeaderTimeout,
@@ -32,31 +32,30 @@ func Serve(config ServeConfig) error {
 		Handler:           router,
 	}
 
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		os.Interrupt,
-		syscall.SIGTERM,
-	)
-	defer stop()
-
-	errChan := make(chan error, 1)
 	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errChan <- err
+		// service connections
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 
-	select {
-	case err := <-errChan:
-		return fmt.Errorf("server failed to start: %w", err)
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal, 1)
+	// kill (no params) by default sends syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be caught, so don't need add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown Server ...")
 
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("server shutdown failed: %w", err)
-		}
-
-		return nil
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Println("Server Shutdown:", err)
+		return err
 	}
+	log.Println("Server exiting")
+
+	return nil
 }

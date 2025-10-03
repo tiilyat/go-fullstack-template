@@ -15,7 +15,7 @@ type BindRoutesConfig struct {
 func bindRoutes(router *gin.Engine, config BindRoutesConfig) {
 	api := router.Group("/api")
 	{
-		api.GET("/ping", pingHandler())
+		api.GET("/health", healthHandler())
 	}
 
 	router.NoRoute(staticHandler(config.DevMode, config.FrontDevServerURL, config.DistDirFS))
