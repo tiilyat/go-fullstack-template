@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,16 +12,16 @@ import (
 	"time"
 )
 
+// ServeConfig holds configuration for the HTTP server.
 type ServeConfig struct {
 	Env               string
 	Port              string
-	UIDevMode         bool
-	UIDevServerURL    string
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	ReadHeaderTimeout time.Duration
 }
 
+// Serve starts the HTTP server with graceful shutdown support.
 func Serve(config ServeConfig) error {
 	router := NewServer(config)
 
@@ -34,7 +35,7 @@ func Serve(config ServeConfig) error {
 
 	go func() {
 		// service connections
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()

@@ -1,22 +1,13 @@
 package http
 
 import (
-	"io/fs"
-
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 )
 
-type BindRoutesConfig struct {
-	DevMode           bool
-	FrontDevServerURL string
-	DistDirFS         fs.FS
-}
+func bindRoutes(router chi.Router) {
+	router.Route("/api", func(r chi.Router) {
+		r.Get("/health", healthHandler())
+	})
 
-func bindRoutes(router *gin.Engine, config BindRoutesConfig) {
-	api := router.Group("/api")
-	{
-		api.GET("/health", healthHandler())
-	}
-
-	router.NoRoute(staticHandler(config.DevMode, config.FrontDevServerURL, config.DistDirFS))
+	router.HandleFunc("/*", spaHandler())
 }

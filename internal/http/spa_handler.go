@@ -2,13 +2,14 @@ package http
 
 import (
 	"io/fs"
-	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"path/filepath"
+
+	"github.com/tiilyat/embed-go-front/ui"
 )
 
+// serveStaticFiles serves files from the embedded filesystem.
+// If indexFallback is true, serves index.html for non-existent paths (SPA routing).
 func serveStaticFiles(fsys fs.FS, indexFallback bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.ToSlash(filepath.Clean(r.URL.Path))
@@ -33,25 +34,7 @@ func serveStaticFiles(fsys fs.FS, indexFallback bool) http.HandlerFunc {
 	}
 }
 
-func serveDevProxy(frontDevServerURL string) http.HandlerFunc {
-	target, err := url.Parse(frontDevServerURL)
-	if err != nil {
-		log.Fatalf("Failed to parse Vite URL: %v", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(target)
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		proxy.ServeHTTP(w, r)
-	}
-}
-
-func staticHandler(devMode bool, frontDevServerURL string, distDirFS fs.FS) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if devMode {
-			serveDevProxy(frontDevServerURL)(w, r)
-		} else {
-			serveStaticFiles(distDirFS, true)(w, r)
-		}
-	}
+// spaHandler serves embedded static files with SPA fallback routing.
+func spaHandler() http.HandlerFunc {
+	return serveStaticFiles(ui.DistDirFS, true)
 }

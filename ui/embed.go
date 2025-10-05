@@ -1,4 +1,3 @@
-// Package frontend handles the frontend embedding.
 package ui
 
 import (

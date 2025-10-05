@@ -16,8 +16,6 @@ func main() {
 	if err := http.Serve(http.ServeConfig{
 		Env:               cfg.Env,
 		Port:              cfg.Port,
-		UIDevMode:         cfg.UIDevMode,
-		UIDevServerURL:    cfg.UIDevServerURL,
 		ReadTimeout:       cfg.ReadTimeout,
 		WriteTimeout:      cfg.WriteTimeout,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,

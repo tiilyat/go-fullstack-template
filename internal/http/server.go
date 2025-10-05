@@ -1,22 +1,26 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/tiilyat/embed-go-front/ui"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewServer(config ServeConfig) *gin.Engine {
-	if config.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+// NewServer creates and configures the HTTP router with middleware.
+func NewServer(config ServeConfig) chi.Router {
+	router := chi.NewRouter()
 
-	router := gin.Default()
+	// Request timeout middleware
+	router.Use(middleware.Timeout(60 * time.Second))
 
-	bindRoutes(router, BindRoutesConfig{
-		DevMode:           config.UIDevMode,
-		FrontDevServerURL: config.UIDevServerURL,
-		DistDirFS:         ui.DistDirFS,
-	})
+	// Logger middleware
+	router.Use(middleware.Logger)
+
+	// Recoverer middleware for panic handling
+	router.Use(middleware.Recoverer)
+
+	bindRoutes(router)
 
 	return router
 }
